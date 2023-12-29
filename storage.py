@@ -23,11 +23,13 @@ class Storage:
     async def _save_fragment(self):
         """ We'll use system (linux) commands for this job
         """
-        filename = time.strftime('%H:%M')
-        dirname = time.strftime('%Y-%m-%d')
+        court_id = str(Config.court_id)
+        # File/dir format change %d-%m-%Y/%d-%m-%Y_%H-%M-%S-%f_court-id
+        filename = datetime.now().strftime('%d-%m-%Y_%H-%M-%S-%f') + "_" + court_id
+        dirname = datetime.now().strftime('%d-%m-%Y')
 
         cfg = Config.cameras[self._hash]
-        path = f'{Config.storage_path}/{cfg["path"]}/{dirname}'
+        path = f'{Config.storage_path}/{dirname}'
 
         await _mkdir(path)
 
@@ -91,7 +93,7 @@ class Storage:
         # Delete all subdirectories older than "storage_period_days"
         try:
             cfg = Config.cameras[self._hash]
-            await _delete_old_dir(f'{Config.storage_path}/{cfg["path"]}')
+            await _delete_old_dir(f'{Config.storage_path}')
             Log.print(f'Storage: {msg}: "{self._hash}" folder cleaned')
         except Exception as e:
             Log.print(f'Storage: {msg}: cleanup ERROR "{self._hash}" ({repr(e)})')
@@ -111,11 +113,12 @@ class Storage:
             Cameras can turn off on power loss, or external commands can freeze.
         """
         cfg = Config.cameras[self._hash]
-        dirname = time.strftime('%Y-%m-%d')
-        path = f'{Config.storage_path}/{cfg["path"]}/{dirname}'
+        dirname = datetime.now().strftime('%d-%m-%Y')
+        path = f'{Config.storage_path}/{dirname}'
 
         # Get last modify time of most recent file
         cmd = f'cd {path} && stat -c %Y $(ls -Art | tail -n 1)'
+        print("[Debug][_watchdog] cmd:", cmd)
 
         p = await asyncio.create_subprocess_shell(
             cmd,
@@ -126,6 +129,7 @@ class Storage:
 
         stdout, _stderr = await p.communicate()
         last_time = stdout.decode()
+        print("[Debug][_watchdog] last_time:", last_time)
         if not last_time:
             return
 
@@ -159,15 +163,19 @@ async def _delete_old_dir(path):
     stdout, _stderr = await p.communicate()
     if not stdout:
         return
-    oldest_dirname = (datetime.now() - timedelta(days=Config.storage_period_days)).strftime('%Y-%m-%d')
+    oldest_dirname = (datetime.now() - timedelta(days=Config.storage_period_days)).strftime('%d-%m-%Y')
+    print("[Debug][_delete_old_dir] oldest_dirname:", oldest_dirname)
 
     for row in stdout.decode().split('\n'):
+        print("[Debug][_delete_old_dir] row:", row)
         if not row:
             continue
         dirname = row[:-1].split('/')[-1]
+        print("[Debug][_delete_old_dir] dirname:", dirname)
         # use comparison regarding a lexicographical order, not mtime
         if not dirname or dirname >= oldest_dirname:
             continue
         cmd = f'rm -rf {path}/{dirname}'
+        print("[Debug][_delete_old_dir] cmd:", cmd)
         proc = await asyncio.create_subprocess_shell(cmd)
         await proc.wait()
