@@ -2,7 +2,7 @@ import socket
 
 
 class Config:
-    rtsp_port = 4554
+    rtsp_port = 8554
     start_udp_port = 5550
     local_ip = socket.gethostbyname(socket.gethostname())
 
@@ -19,12 +19,13 @@ class Config:
     #       Note that these utilities aren't included and must be installed yourself.
     #
     cameras = {
-        'some-URL-compatible-string/including-UTF-characters': {
-            'path': 'some folder in the storage_path',
-            'url': 'rtsp://[<login>:<password>@]<IP or host name>[:554][/<uri>]',
+        'cameras/camera-1': {
+            'path': 'cam-1',
+            'url': 'rtsp://USER:password@XXX.XXX.XXX.XXX:XXX',
             # 'storage_command': 'any *nix command for saving rtsp stream to a file',
         },
     }
+    court_id = <ID>
 
     # Force UDP or TCP protocol globally
     tcp_mode = False
@@ -36,17 +37,18 @@ class Config:
     watchdog_interval = 30
 
     # Run this script with root permissions or change this path and set up log rotation yourself
-    log_file = '/var/log/python-rtsp-server.log'
+    log_file = '<PATH_TO_LOGS>/python-rtsp-server.log'
 
     # Attention!
     # All files and subdirectories older than "storage_period_days" in this folder will be deleted!
-    storage_path = 'absolute path to video monitoring storage folder'
-    storage_period_days = 14
-    storage_fragment_secs = 600
+    storage_path = '<PATH_TO_RECORDS_NO_SLASH_AT_THE_END>'
+    storage_period_days = 3
+    storage_fragment_secs = 900
+
     # UDP mode:
-    storage_command = 'ffmpeg -i {url} -c copy -v fatal -t {storage_fragment_secs} {filename}.mkv'
+    storage_command = 'ffmpeg -i {url} -c copy -v error -t {storage_fragment_secs} {filename}.mp4'
     # TCP mode:
     # storage_command = 'ffmpeg -rtsp_transport tcp -i {url} -c copy -v fatal -t {storage_fragment_secs} {filename}.mkv'
-    storage_enable = False
+    storage_enable = True
 
     debug = True
