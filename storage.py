@@ -155,7 +155,10 @@ async def _mkdir(folder):
 
 
 async def _delete_old_dir(path):
-    cmd = f'ls -d {path}/*/'
+    print("[Debug][_delete_old_dir]")
+    cmd = f'ls -d {path}/*/' # Returns list of folder's path
+    print("[Debug][_delete_old_dir] cmd:", cmd)
+
     p = await asyncio.create_subprocess_shell(
         cmd,
         stdout=asyncio.subprocess.PIPE,
@@ -163,8 +166,10 @@ async def _delete_old_dir(path):
     stdout, _stderr = await p.communicate()
     if not stdout:
         return
+
     oldest_dirname = (datetime.now() - timedelta(days=Config.storage_period_days)).strftime('%d-%m-%Y')
-    print("[Debug][_delete_old_dir] oldest_dirname:", oldest_dirname)
+    print("[Debug][_delete_old_dir] oldest_dirname to keep:", oldest_dirname, ". Everything older than this folder will be removed.")
+    oldest_dirname_dt = datetime.strptime(oldest_dirname, "%d-%m-%Y")
 
     for row in stdout.decode().split('\n'):
         print("[Debug][_delete_old_dir] row:", row)
@@ -172,8 +177,13 @@ async def _delete_old_dir(path):
             continue
         dirname = row[:-1].split('/')[-1]
         print("[Debug][_delete_old_dir] dirname:", dirname)
-        # use comparison regarding a lexicographical order, not mtime
-        if not dirname or dirname >= oldest_dirname:
+        if not dirname:
+            print("[Debug][_delete_old_dir] Dirname is empty, skipping...")
+            continue
+        dirname_dt = datetime.strptime(dirname, "%d-%m-%Y")
+
+        # Delete if older than the oldest
+        if dirname_dt >= oldest_dirname_dt:
             continue
         cmd = f'rm -rf {path}/{dirname}'
         print("[Debug][_delete_old_dir] cmd:", cmd)

@@ -46,8 +46,9 @@ class Config:
     storage_fragment_secs = 900
 
     # UDP mode:
-    storage_command = 'ffmpeg -i {url} -c copy -v error -t {storage_fragment_secs} {filename}.mp4'
+    # storage_command = 'ffmpeg -i {url} -c copy -v error -t {storage_fragment_secs} {filename}.mp4'
     # TCP mode:
+    storage_command = "ffmpeg -rtsp_transport tcp -i {url} -c copy -v error -flags +global_header -t {storage_fragment_secs} -segment_format_options movflags=+faststart -reset_timestamps 1 {filename}.mp4"
     # storage_command = 'ffmpeg -rtsp_transport tcp -i {url} -c copy -v fatal -t {storage_fragment_secs} {filename}.mkv'
     storage_enable = True
 
